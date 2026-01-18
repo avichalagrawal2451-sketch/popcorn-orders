@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Poppin Admin – Orders</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #fff; color: #333; }
+        h1 { color: #FFD700; } /* Brand color */
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #FFD700; padding: 8px; text-align: center; }
+        select { padding: 5px; border-radius: 4px; }
+        button { padding: 5px 10px; cursor: pointer; background: #FFD700; color: #333; border: none; border-radius: 4px; transition: background 0.3s; }
+        button:hover { background: #FFC700; }
+        #search { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #FFD700; border-radius: 4px; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.8em; color: #777; }
+        @media (max-width: 600px) { table { font-size: 0.9em; } }
+    </style>
+</head>
+<body>
+
+<h1>Poppin Admin Panel – Manage Orders</h1>
+
+<input type="text" id="search" placeholder="Search by ID or Name..." aria-label="Search Orders">
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Popcorn</th>
+            <th>Qty</th>
+            <th>Status</th>
+            <th>Update</th>
+        </tr>
+    </thead>
+    <tbody id="orders-table"></tbody>
+</table>
+
+<footer>&copy; 2026 Poppin Popcorn. Admin access for Pune operations.</footer>
+
+<script>
+    async function loadOrders() {
+        const res = await fetch('/admin/orders');
+        const orders = await res.json();
+        const table = document.getElementById('orders-table');
+        const search = document.getElementById('search').value.toLowerCase();
+        table.innerHTML = '';
+
+        orders.filter(o => 
+            o.id.toString().includes(search) || o.name.toLowerCase().includes(search)
+        ).forEach(o => {
+            table.innerHTML += `
+                <tr>
+                    <td>${o.id}</td>
+                    <td>${o.name}</td>
+                    <td>${o.popcorn_type}</td>
+                    <td>${o.quantity}</td>
+                    <td>
+                        <select id="status-${o.id}">
+                            <option ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                            <option ${o.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
+                            <option ${o.status === 'Out for Delivery' ? 'selected' : ''}>Out for Delivery</option>
+                            <option ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button onclick="updateStatus(${o.id})">Save</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function updateStatus(orderId) {
+        const status = document.getElementById(`status-${orderId}`).value;
+        await fetch('/admin/update_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderId, status })
+        });
+        alert('Status updated for Poppin order');
+        loadOrders(); // Refresh after update
+    }
+
+    // Auto-refresh every 10 seconds
+    setInterval(loadOrders, 10000);
+
+    // Search on input
+    document.getElementById('search').addEventListener('input', loadOrders);
+
+    loadOrders(); // Initial load
+</script>
+
+</body>
+</html>
